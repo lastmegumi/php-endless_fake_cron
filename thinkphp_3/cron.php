@@ -148,21 +148,10 @@ class CronController extends CommonController {
 		endwhile;
 	}
 
-	private function Sitemap(){
-		$con = A('sm');
-		$con->new_sitemap();
-	}
-
-	private function Rss(){
-		$con = A('sm');
-		$con->new_feed();
-	}
-
-
 	// 测试函数
 	// 每次 新闻 id ++
 	private function test($arg = null){ 
-		return D('zan')->execute("UPDATE wf_zan SET newid = newid + 1 WHERE uid = 941");
+		return strtotime("now");
 	}
 
 	// 禁用旧的工作
@@ -173,75 +162,5 @@ class CronController extends CommonController {
 		$mapj['status'] = 1;
 		D('job')->where($mapj)->setField('status', 2);
 	}
-
-	//发送订阅信息 参数
-	// timeid  
-	// 1 : 每天
-	// 2 : 每周
-	// 3 : 每月
-	private function Subscribe($arg=  null){
-		$timeid = $arg['timeid']? intval($arg['timeid']):0;
-		if(!$timeid){return;}
-		$this->SendSubscribe($timeid);
-	}
-
-	protected function SendSubscribe($timeid){
-
-		$name="您在美东人才网上订阅的职位有新的消息啦！";
-		$sub  = M('Subscribe')->where('status=1 and timeid='.$timeid)->select();
-		foreach ($sub as $val ) {
-			$mail= $val['email'];
-			$city= $val['hopecid'];
-			$pay= $val['hopepay'];
-			$keywords = explode(',', $val['hopejob']);
-			$tmpArr = array();
-			foreach($keywords  as $key =>$val) {
-			array_push($tmpArr, array('like','%'.$val.'%'));
-			 }
-			 array_push($tmpArr,'or');
-			$map['status']= "1";
-			$map['cityid'] = $city;
-			$map['payid']= $pay;
-			$map['title'] = $tmpArr;  
-			switch ($timeid) {
-				case 1:
-					$time = strtotime('-1 day');break;
-				case 2:
-					$time = strtotime('-7 day');break;
-				case 3:				
-					$time = strtotime('-1 month');	break;
-				default:
-					$time = false;
-					break;
-			}
-			if(!$time){return;}
-			$map['addtime'] = array('egt',$time);
-			$order = 'addtime desc';
-
-			$do    = M('job'); 
-			$joblist = $do->order($order)->where($map)->select();
-
-			foreach ($joblist as $k => $v) {
-			$joblist[$k]['title']  = M('Job')->where('id = ' . $v['id'])->getField('title');
-			$offer   = '<div class="nui-fClear sR0"><br /> 
-						<table style="width: 99.8%;height:99.8% ">
-						<tbody>
-						<tr>
-						<td style="background:#FAFAFA"> 
-						<div style="padding:0 12px 0 12px;margin-top:18px">
-						<p style="background-color: #C7EDCC;border: 0px solid #DDD;padding: 10px 15px;margin:18px 0"> <a href="https://www.eusjob.com/index.php/Home/Job/item?jobid='.$v['id'].'"  target="_blank">'.$joblist[$k]['title'].'</a></p>
-						</div>
-						</td>
-						</tr>
-						</tbody>
-						</table>
-						</div>';
-			$content = $offer;
-			//dump($content);
-			sendMail($mail,$name, $content);
-			}
-		}
-	}
-
 }
 ?>
